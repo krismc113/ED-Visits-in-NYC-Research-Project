@@ -20,7 +20,8 @@ editor: visual
   library(lubridate)
 #install.packages('tableone')
   library(tableone)
-
+#install.packages('knitr')
+  library(knitr)
 ```
 
 ## Dataset 
@@ -40,5 +41,33 @@ data$Date <- as.Date(data$END_DATE)
 #Turns end date column into date
 
 data$END_DATE <- NULL
+
+```
+
+## Create Temperature Ranges
+
+```{r}
+data$TEMP_RANGE <- cut(data$MAX_DAILY_TEMP,
+                       breaks = c(-Inf, 60, 80, 90, Inf),
+                       labels = c("Cold", "Warm", "Hot", "Overheat")
+)
+
+```
+
+## Descriptive Statistics
+
+```{r}
+# subset(data, as.integer(format(Date, "%Y")) == 2018)
+for (i in 2018:2025) {
+  print(summary(subset(data, as.integer(format(Date, "%Y")) == i)))
+}
+ds_table <- CreateTableOne(data = data)
+kable(print(ds_table, showAllLevels = TRUE, printToggle = FALSE, noSpaces = TRUE))
+
+print(ds_table)
+
+```
+
+```{r}
 
 ```
