@@ -23,10 +23,22 @@ editor: visual
 
 ```
 
-## Dataset
+## Dataset 
+
+Mutating Date Column
 
 ```{r}
 
+data2 <- read.csv("previous_years.csv")
+
+data1 <- read.csv("edheat2025_live.csv")
+
+data <- bind_rows(data2, data1)
+#Combines data sets with similar rows and columns
+
+data$Date <- as.Date(data$END_DATE)
+#Turns end date column into date
+
+data$END_DATE <- NULL
 
 ```
-
