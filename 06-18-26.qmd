@@ -22,6 +22,7 @@ editor: visual
   library(tableone)
 #install.packages('knitr')
   library(knitr)
+
 ```
 
 ## Dataset 
@@ -47,9 +48,12 @@ data$END_DATE <- NULL
 ## Create Temperature Ranges
 
 ```{r}
+
 data$TEMP_RANGE <- cut(data$MAX_DAILY_TEMP,
+                       
                        breaks = c(-Inf, 60, 80, 90, Inf),
-                       labels = c("Cold", "Warm", "Hot", "Overheat")
+                       
+                       labels = c("Cold", "Warm", "Hot", "Extreme Heat")
 )
 
 ```
@@ -57,10 +61,13 @@ data$TEMP_RANGE <- cut(data$MAX_DAILY_TEMP,
 ## Descriptive Statistics
 
 ```{r}
+
 # subset(data, as.integer(format(Date, "%Y")) == 2018)
-for (i in 2018:2025) {
+
+for (i in 2017:2025) {
   print(summary(subset(data, as.integer(format(Date, "%Y")) == i)))
 }
+
 ds_table <- CreateTableOne(data = data)
 kable(print(ds_table, showAllLevels = TRUE, printToggle = FALSE, noSpaces = TRUE))
 
@@ -68,6 +75,81 @@ print(ds_table)
 
 ```
 
+## Figures just to see
+
 ```{r}
 
+
+plot(data$Date, data$MAX_DAILY_TEMP, 
+     main = "Max Daily Temp vs. Time",  
+     xlab = "Date",     
+     ylab = "Max Daily Temp",        
+     col = "blue",                
+     pch = 19,                     
+     type = "b")
+
+
+ 
+```
+
+```{r}
+doy <- as.numeric(format(data$Date, "%j"))
+
+plot(doy[idx], data$MAX_DAILY_TEMP[idx],
+     type = "l",
+     col = "blue",
+     xlab = "Day of Year",
+     ylab = "Max Daily Temp",
+     main = "Max Daily Temperature: 2018 vs 2019",
+     ylim = range(data$MAX_DAILY_TEMP[c(idx, idx2)], na.rm = TRUE))
+
+lines(doy[idx2], data$MAX_DAILY_TEMP[idx2],
+      col = "green")
+
+legend("topright",
+       legend = c("2018", "2019"),
+       col = c("blue", "green"),
+       lty = 1)
+```
+
+```{r}
+idx <- format(data$Date, "%Y") == "2017"
+idx2 <- format(data$Date, "%Y") == "2025"
+
+# Create dates with the same year (2000)
+date2018 <- as.Date(paste0("2000-", format(data$Date[idx], "%m-%d")))
+date2025 <- as.Date(paste0("2000-", format(data$Date[idx2], "%m-%d")))
+
+plot(date2018, data$MAX_DAILY_TEMP[idx],
+     type = "l",
+     col = "blue",
+     xlab = "Date",
+     ylab = "Max Daily Temp",
+     main = "Max Daily Temperature: 2017 vs 2025",
+     ylim = range(data$MAX_DAILY_TEMP[c(idx, idx2)], na.rm = TRUE))
+
+lines(date2025, data$MAX_DAILY_TEMP[idx2],
+      col = "green")
+
+legend("topright",
+       legend = c("2017", "2025"),
+       col = c("blue", "green"),
+       lty = 1)
+```
+
+```{r}
+# install.packages("ggplot2")
+library(ggplot2) 
+# Create a sample categorical vector
+
+# Calculate the frequency table
+range_counts <- table(data$TEMP_RANGE)
+
+# Create the bar plot
+barplot(range_counts, 
+        main = "Frequency of Temp Ranges", 
+        xlab = "Temp Range in Degrees F", 
+        ylab = "Count", 
+        names.arg = c("Below 60", "60-79", "80-89", "Equal or above 90"),
+        col = c("blue", "lightblue", "orange", "red"))
 ```
