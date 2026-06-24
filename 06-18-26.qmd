@@ -221,23 +221,23 @@ df2025 <- data.frame(
 
 # Create individual plots
 p1 <- ggplot(df2017, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2017)', y='Temp °F')
+  geom_line() + labs(x='2017', y='Temp °F')
 p2 <- ggplot(df2018, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2018)', y='Temp °F')
+  geom_line() + labs(x='2018', y='Temp °F')
 p3 <- ggplot(df2019, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2019)', y='Temp °F')
+  geom_line() + labs(x='2019', y='Temp °F')
 p4 <- ggplot(df2020, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2020)', y='Temp °F')
+  geom_line() + labs(x='2020', y='Temp °F')
 p5 <- ggplot(df2021, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2021)', y='Temp °F')
+  geom_line() + labs(x='2021', y='Temp °F')
 p6 <- ggplot(df2022, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2022)', y='Temp °F')
+  geom_line() + labs(x='2022', y='Temp °F')
 p7 <- ggplot(df2023, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2023)', y='Temp °F')
+  geom_line() + labs(x='2023', y='Temp °F')
 p8 <- ggplot(df2024, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2024)', y='Temp °F')
+  geom_line() + labs(x='2024', y='Temp °F')
 p9 <- ggplot(df2025, aes(x = Date, y = Temp)) +
-  geom_line() + labs(x='Date (2025)', y='Temp °F')
+  geom_line() + labs(x='2025', y='Temp °F')
 library(grid)
 
 final_plot <-
@@ -245,7 +245,9 @@ final_plot <-
   (p4 + p5 + p6) /
   (p7 + p8 + p9) +
   plot_annotation(
-    title = "Maximum Daily Temperature by Year"
+    title = "Maximum Daily Temperature by Year",
+    left = textGrob("Temperature (°F)", rot = 90),
+    bottom = textGrob("Date")
   )
 final_plot
 ```
