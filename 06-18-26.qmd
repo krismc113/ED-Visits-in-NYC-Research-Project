@@ -389,3 +389,57 @@ ggplot(data, aes(x=Date, group = year(Date))) +
   
   ggtitle("ED Visits and Max Daily Temp vs. Time")
 ```
+
+## Linear Regression??
+
+```{r}
+model.linear <-  lm(HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP, data = data)
+summary(model)
+```
+
+```{r}
+model.pois <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  family = poisson,
+  data = data
+)
+
+summary(model.pois)
+```
+
+## Plotting linear vs Poisson
+
+```{r}
+plot(data$MAX_DAILY_TEMP,
+     data$HEAT_ED_VISIT_COUNT,
+     pch = 16,
+     col = rgb(0,0,0,0.3),
+     xlab = "Maximum Daily Temperature (°F)",
+     ylab = "Heat ED Visit Count",
+     main = "Linear vs Poisson Regression")
+
+abline(model.linear,
+       col = "blue",
+       lwd = 3)
+
+temp_seq <- seq(min(data$MAX_DAILY_TEMP),
+                max(data$MAX_DAILY_TEMP),
+                length.out = 100)
+
+pois_pred <- predict(
+  model.pois,
+  newdata = data.frame(MAX_DAILY_TEMP = temp_seq),
+  type = "response"
+)
+
+lines(temp_seq,
+      pois_pred,
+      col = "red",
+      lwd = 3)
+
+legend("topleft",
+       legend = c("Linear Regression",
+                  "Poisson Regression"),
+       col = c("blue", "red"),
+       lwd = 3)
+```
