@@ -25,7 +25,7 @@ editor: visual
 
 ```
 
-## Dataset 
+## Dataset
 
 Mutating Date Column
 
@@ -326,7 +326,7 @@ ggplot(data, aes(x = MAX_DAILY_TEMP, y = HEAT_ED_VISIT_COUNT)) +
   theme_minimal()
 ```
 
-## Get the four outliers 
+## Get the four outliers
 
 ```{r}
 data[data$HEAT_ED_VISIT_COUNT > 100, ]
@@ -442,4 +442,21 @@ legend("topleft",
                   "Poisson Regression"),
        col = c("blue", "red"),
        lwd = 3)
+```
+
+## Pearson and Spearman Correlation
+
+```{r}
+# Correlation test between two variables
+pearson_corr <- cor.test(data$MAX_DAILY_TEMP, data$HEAT_ED_VISIT_COUNT, method = "pearson")
+
+# View the full results
+print(pearson_corr)
+```
+
+Wow so this is telling us that the p-value is very small, very close to zero which could be telling us that there is a correlation between temp and ED visits.
+
+```{r}
+spearman_corr <- cor.test(data$MAX_DAILY_TEMP, data$HEAT_ED_VISIT_COUNT, method = "spearman", exact = FALSE)
+print(spearman_corr)
 ```
