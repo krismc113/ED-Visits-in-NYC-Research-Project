@@ -25,7 +25,7 @@ editor: visual
 
 ```
 
-## Dataset 
+## Dataset
 
 Mutating Date Column
 
@@ -101,6 +101,7 @@ plot(doy[idx], data$MAX_DAILY_TEMP[idx],
      xlab = "Day of Year",
      ylab = "Max Daily Temp",
      main = "Max Daily Temperature: 2018 vs 2019",
+     xlim = range(doy[c(idx, idx2)], na.rm = TRUE),
      ylim = range(data$MAX_DAILY_TEMP[c(idx, idx2)], na.rm = TRUE))
 
 lines(doy[idx2], data$MAX_DAILY_TEMP[idx2],
@@ -152,4 +153,410 @@ barplot(range_counts,
         ylab = "Count", 
         names.arg = c("Below 60", "60-79", "80-89", "Equal or above 90"),
         col = c("blue", "lightblue", "orange", "red"))
+
+```
+
+## Scatter plot of temp per year
+
+```{r}
+library(ggplot2)
+#install.packages('patchwork')
+library(patchwork)
+
+idx <- format(data$Date, "%Y") == "2017"
+idx2 <- format(data$Date, "%Y") == "2018"
+idx3 <- format(data$Date, "%Y") == "2019"
+idx4 <- format(data$Date, "%Y") == "2020"
+idx5 <- format(data$Date, "%Y") == "2021"
+idx6 <- format(data$Date, "%Y") == "2022"
+idx7 <- format(data$Date, "%Y") == "2023"
+idx8 <- format(data$Date, "%Y") == "2024"
+idx9 <- format(data$Date, "%Y") == "2025"
+
+date2017 <- as.Date(paste0("2000-", format(data$Date[idx], "%m-%d")))
+date2018 <- as.Date(paste0("2000-", format(data$Date[idx2], "%m-%d")))
+date2019 <- as.Date(paste0("2000-", format(data$Date[idx3], "%m-%d")))
+date2020 <- as.Date(paste0("2000-", format(data$Date[idx4], "%m-%d")))
+date2021 <- as.Date(paste0("2000-", format(data$Date[idx5], "%m-%d")))
+date2022 <- as.Date(paste0("2000-", format(data$Date[idx6], "%m-%d")))
+date2023 <- as.Date(paste0("2000-", format(data$Date[idx7], "%m-%d")))
+date2024 <- as.Date(paste0("2000-", format(data$Date[idx8], "%m-%d")))
+date2025 <- as.Date(paste0("2000-", format(data$Date[idx9], "%m-%d")))
+
+df2017 <- data.frame(
+  Date = date2017,
+  Temp = data$MAX_DAILY_TEMP[idx]
+)
+df2018 <- data.frame(
+  Date = date2018,
+  Temp = data$MAX_DAILY_TEMP[idx2]
+)
+df2019 <- data.frame(
+  Date = date2019,
+  Temp = data$MAX_DAILY_TEMP[idx3]
+)
+df2020 <- data.frame(
+  Date = date2020,
+  Temp = data$MAX_DAILY_TEMP[idx4]
+)
+df2021 <- data.frame(
+  Date = date2021,
+  Temp = data$MAX_DAILY_TEMP[idx5]
+)
+df2022 <- data.frame(
+  Date = date2022,
+  Temp = data$MAX_DAILY_TEMP[idx6]
+)
+df2023 <- data.frame(
+  Date = date2023,
+  Temp = data$MAX_DAILY_TEMP[idx7]
+)
+df2024 <- data.frame(
+  Date = date2024,
+  Temp = data$MAX_DAILY_TEMP[idx8]
+)
+df2025 <- data.frame(
+  Date = date2025,
+  Temp = data$MAX_DAILY_TEMP[idx9]
+)
+
+# Create individual plots
+p1 <- ggplot(df2017, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2017', y = NULL)
+p2 <- ggplot(df2018, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2018', y = NULL)
+p3 <- ggplot(df2019, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2019', y = NULL)
+p4 <- ggplot(df2020, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2020', y = NULL)
+p5 <- ggplot(df2021, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2021', y = NULL)
+p6 <- ggplot(df2022, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2022', y = NULL)
+p7 <- ggplot(df2023, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2023', y = NULL)
+p8 <- ggplot(df2024, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2024', y = NULL)
+p9 <- ggplot(df2025, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='2025', y = NULL)
+library(grid)
+
+yleft <- wrap_elements(
+  textGrob("Temperature (°F)", rot = 90,
+           gp = gpar(fontsize = 14))
+)
+
+final_plot <- yleft +
+  (
+    (p1 + p2 + p3) /
+      (p4 + p5 + p6) /
+      (p7 + p8 + p9)
+  ) +
+  plot_layout(widths = c(0.05, 1)) +
+  plot_annotation(
+    title = "Maximum Daily Temperature by Year"
+  )
+
+final_plot
+```
+
+## ED visits vs. Mean temperature
+
+```{r}
+ggplot(data, aes(x = MAX_DAILY_TEMP , y = HEAT_ED_VISIT_COUNT)) +
+  # geom_point adds the data markers
+  geom_point(color = "#2C3E50", linewidth = 3.5) +
+  geom_point(data = subset(data, HEAT_ED_VISIT_COUNT > 100), color = "red", linewidth = 3.5) +
+  
+  # Clean up visual layout
+  labs(
+    title = "Emergency Department Visits vs. Max Daily Temp (2017-2025)",
+    x = "Maximum Daily Temperature (°F)",
+    y = "Emergency Department Visits (countz)"
+  ) +
+  theme_minimal()
+  
+```
+
+## Now we sort by month
+
+```{r}
+ggplot(data, aes(x = MAX_DAILY_TEMP, y = HEAT_ED_VISIT_COUNT)) +
+  geom_point(size = 3.5) +
+  
+  geom_point(
+    data = subset(data, format(Date, "%m") == "05"),
+    aes(color = "May"),
+    linewidth = 3.5
+  ) +
+  geom_point(
+    data = subset(data, format(Date, "%m") == "06"),
+    aes(color = "June"),
+    linewidth = 3.5
+  ) +
+  geom_point(
+    data = subset(data, format(Date, "%m") == "07"),
+    aes(color = "July"),
+    linewidth = 3.5
+  ) +
+  geom_point(
+    data = subset(data, format(Date, "%m") == "08"),
+    aes(color = "August"),
+    linewidth = 3.5
+  ) +
+  geom_point(
+    data = subset(data, format(Date, "%m") == "09"),
+    aes(color = "September"),
+    linewidth = 3.5
+  ) +
+  scale_color_manual(
+    name = "Month",
+    values = c(
+      "May" = "blue",
+      "June" = "red",
+      "July" = "orange",
+      "August" = "yellow",
+      "September" = "lightblue"
+    )
+  ) +
+  labs(
+    title = "Emergency Department Visits vs. Max Daily Temp (2017–2025)",
+    x = "Maximum Daily Temperature (°F)",
+    y = "Emergency Department Visits (count)"
+  ) +
+  theme_minimal()
+```
+
+## Get the four outliers
+
+```{r}
+data[data$HEAT_ED_VISIT_COUNT > 100, ]
+
+```
+
+## Zero in on July 2019
+
+```{r}
+#dx_2019 <- format(data$Date, "%Y-%m") == "2019-07"
+# or
+idx_2019 <- format(data$Date, "%Y%m") == "201907"
+
+date_2019 <- as.Date(
+  paste0("2000-", format(data$Date[idx_2019], "%m-%d"))
+)
+
+df_2019 <- data.frame(
+  Date = date_2019,
+  Temp = data$MAX_DAILY_TEMP[idx_2019]
+)
+p1 <- ggplot(df_2019, aes(x = Date, y = Temp)) +
+  geom_line() + labs(x='July 2019', y = 'Temp')
+
+p1
+
+```
+
+## ED Visits and Temp vs. Time
+
+```{r, fig.width=15, fig.height=6}
+
+# install.packages("hrbrthemes")   # only once
+library(hrbrthemes)
+coeff <- max(data$HEAT_ED_VISIT_COUNT, na.rm = TRUE) /
+  max(data$MAX_DAILY_TEMP, na.rm = TRUE)
+
+# A few constants
+temperatureColor <- "#69b3a2"
+priceColor <- rgb(0.2, 0.6, 0.9, 1)
+
+ggplot(data, aes(x=Date, group = year(Date))) +
+  
+  geom_line( aes(y=HEAT_ED_VISIT_COUNT), size=.5, color=temperatureColor) + 
+  geom_line( aes(y=MAX_DAILY_TEMP*coeff), size=.5, color=priceColor) +
+  
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "Emergency Department Visits (countz)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./coeff, name="Maximum Daily Temperature (°F)")
+  ) + 
+  
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = temperatureColor, size=13),
+    axis.title.y.right = element_text(color = priceColor, size=13)
+  ) +
+  
+  ggtitle("ED Visits and Max Daily Temp vs. Time")
+```
+
+## Linear Regression
+
+```{r}
+model.linear <-  lm(HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP, data = data)
+summary(model)
+```
+
+```{r}
+model.pois <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  family = poisson,
+  data = data
+)
+
+summary(model.pois)
+model.quasipois <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  family = quasipoisson,
+  data = data
+)
+
+summary(model.quasipois)
+```
+
+## Plotting linear vs Poisson
+
+```{r}
+plot(data$MAX_DAILY_TEMP,
+     data$HEAT_ED_VISIT_COUNT,
+     pch = 16,
+     col = rgb(0,0,0,0.3),
+     xlab = "Maximum Daily Temperature (°F)",
+     ylab = "Heat ED Visit Count",
+     main = "Linear vs Poisson Regression")
+
+abline(model.linear,
+       col = "blue",
+       lwd = 3)
+
+temp_seq <- seq(min(data$MAX_DAILY_TEMP),
+                max(data$MAX_DAILY_TEMP),
+                length.out = 100)
+
+pois_pred <- predict(
+  model.pois,
+  newdata = data.frame(MAX_DAILY_TEMP = temp_seq),
+  type = "response"
+)
+
+lines(temp_seq,
+      pois_pred,
+      col = "red",
+      lwd = 3)
+
+legend("topleft",
+       legend = c("Linear Regression",
+                  "Poisson Regression"),
+       col = c("blue", "red"),
+       lwd = 3)
+```
+
+## Pearson and Spearman Correlation
+
+```{r}
+# Correlation test between two variables
+pearson_corr <- cor.test(data$MAX_DAILY_TEMP, data$HEAT_ED_VISIT_COUNT, method = "pearson")
+
+# View the full results
+print(pearson_corr)
+```
+
+Wow so this is telling us that the p-value is very small, very close to zero which could be telling us that there is a correlation between temp and ED visits.
+
+```{r}
+spearman_corr <- cor.test(data$MAX_DAILY_TEMP, data$HEAT_ED_VISIT_COUNT, method = "spearman", exact = FALSE)
+print(spearman_corr)
+```
+
+Which lag gives us the smallest bic or aic
+
+```{r}
+# ensure date is in Date format
+data$date <- as.Date(data$Date)
+
+# create a couple calculated date variables
+
+# year
+data$yr <- as.integer(format(data$date, "%Y"))
+
+# month
+data$mo <- as.integer(format(data$date, "%m"))
+
+# day of week
+data$dow <- weekdays(data$date)
+data$dow <- factor(data$dow, levels=unique(data$dow))
+
+# day of the warm season (integer, restarts at 1 each year)
+data$season_day <- as.integer(data$date - as.Date(paste0(format(data$date, "%Y"), "-05-01"))) + 1
+
+# create indicator for three summer holidays
+# July 4
+data$july4 <- ifelse(format(data$date, "%m-%d") == "07-04",1,0)
+
+# June 19
+data$juneteenth <- ifelse(format(data$date, "%m-%d") == "06-19",1,0)
+
+# Memorial Day (last Monday in May)
+memorial <- as.Date(sapply(data$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-31"))
+  x - as.POSIXlt(x)$wday   # subtract 0-6 days to reach Monday
+}))
+data$memorial <- ifelse(data$date == memorial,1,0)
+
+# Labor Day (first Monday in September)
+labor <- as.Date(sapply(data$yr, function(y) {
+  x <- as.Date(paste0(y, "-09-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7
+}))
+data$labor <- ifelse(data$date == labor,1,0)
+# single holiday variable (indicator of any holiday)
+data$holiday <- as.integer(data$july4 | data$memorial | data$labor | data$juneteenth)
+```
+
+## Lag code
+
+```{r}
+set.seed(123)
+
+# Create daily dates for June, 2017-2025
+dateMay <- seq(as.Date("2017-05-01"), as.Date("2025-05-31"), by = "day")
+dateMay <- dateMay[format(dateMay, "%m") == "05"]
+
+dateJune <- seq(as.Date("2017-06-01"), as.Date("2025-06-30"), by = "day")
+dateJune <- dateJune[format(dateJune, "%m") == "06"]
+
+dateJuly <- seq(as.Date("2017-07-01"), as.Date("2025-07-31"), by = "day")
+dateJuly <- dateJuly[format(dateJuly, "%m") == "07"]
+
+dateAug <- seq(as.Date("2017-08-01"), as.Date("2025-08-31"), by = "day")
+dateAug <- dateAug[format(dateAug, "%m") == "08"]
+
+dateSep <- seq(as.Date("2017-09-01"), as.Date("2025-09-30"), by = "day")
+dateSep <- dateSep[format(dateSep, "%m") == "09"]
+# Simulate temperatures
+temperature <- round(rnorm(length(date), mean = 75, sd = 8), 1)
+
+# Create data frame
+dat <- data.frame(date = date, temperature = temperature)
+
+# Split temperatures by year so lags reset each June
+yr <- format(dat$date, "%Y")
+temp_by_year <- split(dat$temperature, yr)
+
+# Create lag0 through lag6 within each year
+for (i in 0:6) {
+  dat[[paste0("lag", i)]] <- unlist(
+    lapply(temp_by_year, function(x) {
+      if (i == 0) {
+        x
+      } else {
+        c(rep(NA, i), head(x, -i))
+      }
+    }),
+    use.names = FALSE
+  )
+}
 ```

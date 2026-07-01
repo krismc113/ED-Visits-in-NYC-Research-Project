@@ -1,0 +1,259 @@
+---
+title: "NYC"
+format: docx
+editor: visual
+---
+
+## Libraries
+
+```{r, eval=FALSE}
+
+# install.packages('tidyverse')
+  library(tidyverse)
+#install.packages('dplyr')
+  library(dplyr)
+#install.packages('gmodels')
+  library(gmodels)
+#install.packages('readxl')
+  library(readxl)
+#install.packages('lubridate')
+  library(lubridate)
+#install.packages('tableone')
+  library(tableone)
+#install.packages('knitr')
+  library(knitr)
+#install.packages('ggplot2')
+  library(ggplot2)
+#install.packages("patchwork")
+library(patchwork)
+
+```
+
+## Dataset
+
+Mutating Date Column
+
+```{r}
+
+previous_years <- read.csv("previous_years.csv")
+
+edheat2025_live <- read.csv("edheat2025_live.csv")
+
+data2 <- previous_years
+
+data1 <- edheat2025_live
+
+data <- bind_rows(data2, data1)
+#Combines data sets with similar rows and columns
+
+data$Date <- as.Date(data$END_DATE)
+#Turns end date column into date
+
+data$END_DATE <- NULL
+
+```
+
+## Create Temperature Ranges
+
+```{r}
+
+data$TEMP_RANGE <- cut(data$MAX_DAILY_TEMP,
+                       
+                       breaks = c(-Inf, 60, 80, 90, Inf),
+                       
+                       labels = c("Cold", "Warm", "Hot", "Extreme Heat")
+)
+
+```
+
+## Descriptive Statistics
+
+```{r}
+
+# subset(data, as.integer(format(Date, "%Y")) == 2018)
+
+for (i in 2017:2025) {
+  print(summary(subset(data, as.integer(format(Date, "%Y")) == i)))
+}
+
+ds_table <- CreateTableOne(data = data)
+kable(print(ds_table, showAllLevels = TRUE, printToggle = FALSE, noSpaces = TRUE))
+
+print(ds_table)
+
+```
+
+## Boxplot
+
+```{r}
+
+data$Year <- year(data$Date)
+
+ggplot(data,
+       aes( x = factor(Year), y = MAX_DAILY_TEMP)) +
+      geom_boxplot(varwidth = TRUE, fill = "red", color = "black") +
+      labs(
+        title = "Distribution of Heat-realted ED Visits by month from 2017-2025",
+        x = "Month",
+        y = "Heat-Related ED Visits"
+      )
+
+```
+
+
+```{r}
+
+
+data$Month <- month(data$Date)
+
+ggplot(data,
+       aes( x = factor(Month), y = HEAT_ED_VISIT_COUNT)) +
+      geom_boxplot(varwidth = TRUE, fill = "red", color = "black") +
+  coord_cartesian(ylim = c(0, 30)) +
+      labs(
+        title = "Maximum Daily Temperatures from 2017-2025",
+        x = "Year",
+        y = "Maximum Daily Temperature (°F)"
+      )
+
+```
+
+```{r}
+
+data$Month <- month(data$Date)
+
+may_data <- subset(data, Month == 5)
+june_data <- subset(data, Month == 6)
+july_data <- subset(data, Month == 7)
+august_data <- subset(data, Month == 8)
+sept_data <- subset(data, Month == 9)
+
+may <- ggplot(may_data,
+       aes(y = HEAT_ED_VISIT_COUNT)) +
+  geom_boxplot(fill = "red", color = "black") +
+  coord_cartesian(ylim = c(-5, 30)) +
+  labs(
+    x = "May",
+    y = "Heat-Related ED Visits"
+  ) +
+  theme_minimal()
+
+june <- ggplot(june_data,
+       aes(y = HEAT_ED_VISIT_COUNT)) +
+  geom_boxplot(fill = "red", color = "black") +
+  coord_cartesian(ylim = c(-5, 35)) +
+  labs(
+    x = "June",
+    y = NULL
+  ) +
+  theme_minimal()
+
+july <- ggplot(july_data,
+       aes(y = HEAT_ED_VISIT_COUNT)) +
+  geom_boxplot(fill = "red", color = "black") +
+  coord_cartesian(ylim = c(-5, 120)) +
+    labs(
+    x = "July",
+    y = NULL
+  ) +
+  theme_minimal()
+
+august <- ggplot(august_data,
+       aes(y = HEAT_ED_VISIT_COUNT)) +
+  geom_boxplot(fill = "red", color = "black") +
+  coord_cartesian(ylim = c(-5, 50)) +
+    labs(
+    x = "August",
+    y = NULL
+  ) +
+  theme_minimal()
+
+september <- ggplot(sept_data,
+       aes(y = HEAT_ED_VISIT_COUNT)) +
+  geom_boxplot(fill = "red", color = "black") +
+  coord_cartesian(ylim = c(-5, 30)) +
+    labs(
+    x = "September",
+    y = NULL
+  ) +
+  theme_minimal()
+
+p1_final <- wrap_plots(may, june, july, august, september, nrow = 1) + 
+  plot_annotation(
+    title = "Distribution of Heat-Related ED Visits by Month (2017–2025)",
+    theme = theme(plot.title = element_text(size = 16, face = "bold"))
+  ) & # <--- This '&' will now successfully apply to EVERY plot in the list
+  coord_cartesian(ylim = c(0, 15)) & 
+  theme(
+    axis.text.x = element_blank(),   
+    axis.ticks.x = element_blank()   
+  )
+
+print(p1_final)
+
+```
+```{r}
+
+data$Year <- year(data$Date)
+
+ggplot(data,
+       aes( x = factor(Year), y = HEAT_ED_VISIT_COUNT)) +
+      geom_boxplot(varwidth = TRUE, fill = "red", color = "black") +
+   coord_cartesian(ylim = c(0, 15)) +
+      labs(
+        x = "Year",
+        y = "Heat-Related ED Visits",
+        title = "Distribution of Heat-Related ED Visits by Year" )
+
+```
+
+
+## Miscellaneous
+
+```{r}
+
+#boxplot(HEAT_ED_VISIT_COUNT ~ factor(
+#  Month,
+#  levels = c(5, 6, 7, 8, 9),
+#  labels = c("May", "June", "July", "August", "September")),
+                                    
+ #       data = data,
+ #       xlab = "Month",
+ #       ylab = "Heat-Related ED Visits",
+#        main = "Distribution of Heat-Related ED Visits by Month")
+
+#ggplot(data,
+#       aes(x = HEAT_ED_VISIT_COUNT)) +
+#  geom_histogram(binwidth = 1, 
+#                 fill = "yellow",
+#                 color = "black") +
+#  labs(
+#    title = "Distribution of Heat-Related ED Visits (2017–2025)",
+#    x = "Month",
+#    y = "Heat-Related ED Visits"
+#  ) +
+#  theme_minimal()
+
+
+#p <- ggplot(data, aes(x = factor(Month), y = HEAT_ED_VISIT_COUNT)) +
+#  geom_boxplot(fill = "lightblue") +
+#  labs(
+#    title = "Heat-Related ED Visits by Month (2017–2025)",
+#    x = "Month",
+#    y = "Heat-Related ED Visits"
+#  ) +
+#  theme_minimal()
+
+#print(p)
+
+#ggplot(data,
+#       aes( x = factor(Year), y = HEAT_ED_VISIT_COUNT)) +
+#      geom_(varwidth = TRUE, fill = "lightblue", color = "black") + coord_cartesian(ylim = c(-10, 75)) +
+#      labs(
+#        title = "Maximum Daily Temperatures from 2017-2025",
+#        x = "Year",
+#        y = "Heat-related ED Visits",
+#        main = "Distribution of Heat-related ED Visits by Year"
+#     )
+
+```
