@@ -32,20 +32,17 @@ data <- data %>%
 
 ```
 
-
 ## Day of the Week
 
 ```{r}
 #
 ```
 
-
 ## Month
 
 ```{r}
 #
 ```
-
 
 ## Year
 
@@ -64,4 +61,3 @@ data <- data %>%
 ```{r}
 #
 ```
-
