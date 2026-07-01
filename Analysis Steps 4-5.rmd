@@ -1,0 +1,377 @@
+---
+title: "Analysis"
+author: "LZM"
+date: "2026-06-30"
+output: html_document
+---
+
+Loading  
+```{r}
+#install.packages('tidyverse')
+  library(tidyverse)
+#install.packages('dplyr')
+  library(dplyr)
+#install.packages('gmodels')
+  library(gmodels)
+#install.packages('readxl')
+  library(readxl)
+#install.packages('lubridate')
+  library(lubridate)
+#install.packages('tableone')
+  library(tableone)
+#install.packages('knitr')
+  library(knitr)
+```
+
+WD
+```{r}
+getwd()
+```
+
+Merging Data - DOESN'T WORK WITH CONFOUNDER CODE - 1
+```{r}
+
+data <- read.csv("/Users/lilianamorales/Heat Project/previous_years.csv")
+data1 <- read.csv("/Users/lilianamorales/Heat Project/edheat2025_live.csv")
+
+
+data2 <- read.csv("previous_years.csv")
+
+data1 <- read.csv("edheat2025_live.csv")
+
+data <- bind_rows(data2, data1)
+#Combines data sets with similar rows and columns
+
+data$Date <- as.Date(data$END_DATE)
+#Turns end date column into date
+
+data$END_DATE <- NULL
+```
+
+
+Merge Data - WORKS WITH PROVIDED CON CODE - 2
+```{r}
+library(dplyr)
+
+# Read the data
+data2 <- read.csv("previous_years.csv", stringsAsFactors = FALSE)
+data1 <- read.csv("edheat2025_live.csv", stringsAsFactors = FALSE)
+
+# Combine the datasets
+d <- bind_rows(data2, data1)
+
+# Convert END_DATE to a Date object and name it 'date'
+d$date <- as.Date(d$END_DATE)
+
+# Remove the original column if you no longer need it
+d$END_DATE <- NULL
+```
+
+
+
+Step 4: Crude Analyses
+Correlation Analysis
+To evaluate the crude (unadjusted) relation between temperature and heat-related ED visits, calculate:
+Pearson correlation|
+```{r}
+cor.test(
+  data$MAX_DAILY_TEMP,
+  data$HEAT_ED_VISIT_COUNT,
+  method = "pearson"
+)
+```
+
+
+Spearman correlation
+
+```{r}
+cor.test(
+  data$MAX_DAILY_TEMP,
+  data$HEAT_ED_VISIT_COUNT,
+  method = "spearman"
+)
+```
+
+
+
+Simple Regression
+Fit a crude model: Heat-related ED visits = f(temperature)
+You might explore different possible approaches, Linear regression
+```{r}
+model1 <- lm(HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP, data = data)
+
+summary(model1)
+```
+
+
+Poisson regression
+```{r}
+glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  family = poisson(link = "log"),
+  data = data
+)
+```
+Quasi Poisson regression
+```{r}
+glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  family = quasipoisson(link = "log"),
+  data = data
+)
+```
+
+
+
+Negative binomial regression
+First Load MASS 
+```{r}
+library(MASS)
+```
+
+Negative binomial regression
+```{r}
+glm.nb(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  data = data
+)
+```
+
+Discuss advantages and limitations of each approach.
+
+
+
+
+
+
+
+
+Step 5: Time-Series Analysis
+Build and refine your analytical models. Consider whether adjustment for time-varying factors (e.g., potential confounders), seasonality, temporal trends, or other covariates is warranted. To adjust for time, consider adding variables such as year, day of season, long-term trend. Clearly justify your modeling choices and discuss any assumptions made.
+
+
+Extreme Heat Days - WORK ON IT & FIX
+```{r}
+```
+
+
+
+
+Identified Holidays 
+- Independence Day - JULY 4
+- Juneteenth - JUNE 19
+- Memorial Day - LAST MON. MAY 
+- Labor Day - 1ST MON. SEP
+- Mother's Day - 2ND SUN. MAY 
+- Father's Day - 3RD SUN. JUNE
+
+
+Example Code 2 - Holidays 
+```{r}
+# ensure date is in Date format
+d$date <- as.Date(d$date)
+
+# create a couple calculated date variables
+# year
+d$yr <- as.integer(format(d$date, "%Y"))
+
+# month
+d$mo <- as.integer(format(d$date, "%m"))
+
+# day of week
+d$dow <- weekdays(d$date)
+d$dow <- factor(d$dow, levels=unique(d$dow))
+
+# day of the warm season (integer, restarts at 1 each year)
+d$season_day <- as.integer(d$date - as.Date(paste0(format(d$date, "%Y"), "-05-01"))) + 1
+
+# create indicator for three summer holidays
+# July 4
+d$july4 <- ifelse(format(d$date, "%m-%d") == "07-04",1,0)
+
+#ADDING JUNETEENTH
+d$juneteenth <- ifelse(format(d$date, "%m-%d") == "06-19",1,0)
+
+# Memorial Day (last Monday in May)
+memorial <- as.Date(sapply(d$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-31"))
+  x - as.POSIXlt(x)$wday   # subtract 0-6 days to reach Monday
+}))
+d$memorial <- ifelse(d$date == memorial,1,0)
+
+# Labor Day (first Monday in September)
+labor <- as.Date(sapply(d$yr, function(y) {
+  x <- as.Date(paste0(y, "-09-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7
+}))
+d$labor <- ifelse(d$date == labor,1,0)
+
+# MOTHER'S Day (2ND SUNDAY in MAY)
+mother <- as.Date(sapply(d$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 7
+}))
+d$mother <- ifelse(d$date == mother,1,0)
+
+# FATHER'S Day (3RD SUNDAY in JUNE)
+father <- as.Date(sapply(d$yr, function(y) {
+  x <- as.Date(paste0(y, "-06-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 14
+}))
+d$father <- ifelse(d$date == father,1,0)
+
+# single holiday variable (indicator of any holiday) ADDED JUNETEENTH
+d$holiday <- as.integer(d$july4 | d$memorial | d$labor | d$juneteenth | d$mother | d$father)
+
+```
+
+
+
+Example Code - LAG CODE
+```{r}
+set.seed(123)
+
+# Create daily dates for June, 2019-2023 - DONE FOR MONTHS MAY-SEP. 2017-2025
+#MAY
+datemay <- seq(as.Date("2017-05-01"), as.Date("2025-05-31"), by = "day")
+datemay <- date[format(date, "%m") == "06"]
+#JUNE
+datejune <- seq(as.Date("2017-06-01"), as.Date("2025-06-30"), by = "day")
+datejune <- date[format(date, "%m") == "06"]
+#JULY 
+datejuly <- seq(as.Date("2017-07-01"), as.Date("2025-07-31"), by = "day")
+datejuly <- date[format(date, "%m") == "06"]
+#AUGUST 
+dateaugust <- seq(as.Date("2017-08-01"), as.Date("2025-08-31"), by = "day")
+dateaugust <- date[format(date, "%m") == "06"]
+#SEPTEMBER 
+dateseptember <- seq(as.Date("2017-09-01"), as.Date("2025-09-30"), by = "day")
+dateseptember <- date[format(date, "%m") == "06"]
+
+
+# Simulate temperatures
+temperature <- round(rnorm(length(date), mean = 75, sd = 8), 1)
+
+# Create data frame
+dat <- data.frame(date = date, temperature = temperature)
+
+# Split temperatures by year so lags reset each June
+yr <- format(dat$date, "%Y")
+temp_by_year <- split(dat$temperature, yr)
+
+# Create lag0 through lag6 within each year
+for (i in 0:6) {
+  dat[[paste0("lag", i)]] <- unlist(
+    lapply(temp_by_year, function(x) {
+      if (i == 0) {
+        x
+      } else {
+        c(rep(NA, i), head(x, -i))
+      }
+    }),
+    use.names = FALSE
+  )
+}
+
+head(dat, 45)
+```
+
+
+Example Code - Nonlinear effect of temperature - SAVE FOR LATER
+```{r}
+# fit models
+library(MASS)
+library(splines)
+
+# negative binomial models
+
+# linear temperature effects
+fit1 <- glm.nb(visits ~ temp, data = d)
+
+# Natural spline with 3 df; 2 knots chosen automatically
+fit2 <- glm.nb(visits ~ ns(temp, df = 3), data = d)
+
+# Natural spline with 2 user-specified knot locations
+fit3 <- glm.nb(
+  visits ~ ns(temp, knots = quantile(temp, c(0.5, 0.85), na.rm = TRUE)),
+  data = d
+)
+
+# Natural spline with 4 df; 3 knots chosen automatically
+fit4 <- glm.nb(visits ~ ns(temp, df = 4), data = d)
+
+# Compare overall model fit using AIC (aim to minimize)
+AIC(fit1, fit2, fit3, fit4)
+
+# Likelihood-ratio tests versus the linear model; others aren't nested
+anova(fit1, fit2, test = "Chisq")
+anova(fit1, fit3, test = "Chisq")
+anova(fit1, fit4, test = "Chisq")
+
+# Inspect knot locations used by the spline bases
+attr(ns(d$temp, df = 3), "knots") # 33rd and 67th percentiles (automatic)
+attr(ns(d$temp, df = 4), "knots")
+attr(ns(d$temp, knots = quantile(d$temp, c(0.5, 0.85), na.rm = TRUE)), "knots") # 50th and 85th percentiles (user specified)
+
+# Grid of temperatures for smooth prediction curves
+temp_grid <- seq(min(d$temp, na.rm = TRUE),
+                 max(d$temp, na.rm = TRUE),
+                 length.out = 200)
+
+nd <- data.frame(temp = temp_grid)
+
+par(mfrow = c(1, 2))
+
+# -----------------------------
+# Plot 1: response scale
+# -----------------------------
+p1 <- predict(fit1, newdata = nd, type = "response")
+p2 <- predict(fit2, newdata = nd, type = "response")
+p3 <- predict(fit3, newdata = nd, type = "response")
+p4 <- predict(fit4, newdata = nd, type = "response")
+
+plot(d$temp, d$visits,
+     pch = 16, col = "grey70",
+     xlab = "Temperature", ylab = "Daily ED visits",
+     main = "Response scale")
+
+lines(temp_grid, p1, col = "black", lwd = 2)
+lines(temp_grid, p2, col = "blue",  lwd = 2)
+lines(temp_grid, p3, col = "red",   lwd = 2, lty = 2)
+lines(temp_grid, p4, col = "darkgreen", lwd = 2, lty = 3)
+
+legend("topleft",
+       legend = c("Linear", "ns(df = 3)", "ns(knots = c(0.5, 0.85))", "ns(df = 4)"),
+       col = c("black", "blue", "red", "darkgreen"),
+       lwd = 2, lty = c(1, 1, 2, 3), bty = "n")
+
+# -----------------------------
+# Plot 2: link scale
+# -----------------------------
+p1 <- predict(fit1, newdata = nd, type = "link")
+p2 <- predict(fit2, newdata = nd, type = "link")
+p3 <- predict(fit3, newdata = nd, type = "link")
+p4 <- predict(fit4, newdata = nd, type = "link")
+
+plot(d$temp, log(d$visits + 0.8),
+     pch = 16, col = "grey70", ylim=c(-.8,5),
+     xlab = "Temperature", ylab = "log(Daily ED visits + 0.8)",
+     main = "Link scale")
+
+lines(temp_grid, p1, col = "black", lwd = 2)
+lines(temp_grid, p2, col = "blue",  lwd = 2)
+lines(temp_grid, p3, col = "red",   lwd = 2, lty = 2)
+lines(temp_grid, p4, col = "darkgreen", lwd = 2, lty = 3)
+
+legend("topleft",
+       legend = c("Linear", "ns(df = 3)", "ns(knots = c(0.5, 0.85))", "ns(df = 4)"),
+       col = c("black", "blue", "red", "darkgreen"),
+       lwd = 2, lty = c(1, 1, 2, 3), bty = "n")
+```
+
+
+
+Advanced options:
+Consider nonlinear exposure-response relations, for example, through the use of polynomial terms or splines
+
+Consider lagged effects, since heat exposure may affect health immediately or after several days
