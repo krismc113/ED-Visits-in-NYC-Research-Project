@@ -1,6 +1,6 @@
 ---
-title: "confounders"
-format: html
+title: "Confounding"
+format: docx
 editor: visual
 ---
 
@@ -35,7 +35,8 @@ data <- data %>%
 ## Day of the Week
 
 ```{r}
-#
+#beep boop
+
 ```
 
 ## Month
