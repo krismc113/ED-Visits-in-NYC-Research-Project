@@ -101,6 +101,7 @@ plot(doy[idx], data$MAX_DAILY_TEMP[idx],
      xlab = "Day of Year",
      ylab = "Max Daily Temp",
      main = "Max Daily Temperature: 2018 vs 2019",
+     xlim = range(doy[c(idx, idx2)], na.rm = TRUE),
      ylim = range(data$MAX_DAILY_TEMP[c(idx, idx2)], na.rm = TRUE))
 
 lines(doy[idx2], data$MAX_DAILY_TEMP[idx2],
@@ -358,7 +359,9 @@ p1
 ## ED Visits and Temp vs. Time
 
 ```{r, fig.width=15, fig.height=6}
-# install.packages("hrbrthemes")
+
+# install.packages("hrbrthemes")   # only once
+library(hrbrthemes)
 coeff <- max(data$HEAT_ED_VISIT_COUNT, na.rm = TRUE) /
   max(data$MAX_DAILY_TEMP, na.rm = TRUE)
 
@@ -390,7 +393,7 @@ ggplot(data, aes(x=Date, group = year(Date))) +
   ggtitle("ED Visits and Max Daily Temp vs. Time")
 ```
 
-## Linear Regression??
+## Linear Regression
 
 ```{r}
 model.linear <-  lm(HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP, data = data)
@@ -405,6 +408,13 @@ model.pois <- glm(
 )
 
 summary(model.pois)
+model.quasipois <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  family = quasipoisson,
+  data = data
+)
+
+summary(model.quasipois)
 ```
 
 ## Plotting linear vs Poisson
@@ -459,4 +469,94 @@ Wow so this is telling us that the p-value is very small, very close to zero whi
 ```{r}
 spearman_corr <- cor.test(data$MAX_DAILY_TEMP, data$HEAT_ED_VISIT_COUNT, method = "spearman", exact = FALSE)
 print(spearman_corr)
+```
+
+Which lag gives us the smallest bic or aic
+
+```{r}
+# ensure date is in Date format
+data$date <- as.Date(data$Date)
+
+# create a couple calculated date variables
+
+# year
+data$yr <- as.integer(format(data$date, "%Y"))
+
+# month
+data$mo <- as.integer(format(data$date, "%m"))
+
+# day of week
+data$dow <- weekdays(data$date)
+data$dow <- factor(data$dow, levels=unique(data$dow))
+
+# day of the warm season (integer, restarts at 1 each year)
+data$season_day <- as.integer(data$date - as.Date(paste0(format(data$date, "%Y"), "-05-01"))) + 1
+
+# create indicator for three summer holidays
+# July 4
+data$july4 <- ifelse(format(data$date, "%m-%d") == "07-04",1,0)
+
+# June 19
+data$juneteenth <- ifelse(format(data$date, "%m-%d") == "06-19",1,0)
+
+# Memorial Day (last Monday in May)
+memorial <- as.Date(sapply(data$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-31"))
+  x - as.POSIXlt(x)$wday   # subtract 0-6 days to reach Monday
+}))
+data$memorial <- ifelse(data$date == memorial,1,0)
+
+# Labor Day (first Monday in September)
+labor <- as.Date(sapply(data$yr, function(y) {
+  x <- as.Date(paste0(y, "-09-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7
+}))
+data$labor <- ifelse(data$date == labor,1,0)
+# single holiday variable (indicator of any holiday)
+data$holiday <- as.integer(data$july4 | data$memorial | data$labor | data$juneteenth)
+```
+
+## Lag code
+
+```{r}
+set.seed(123)
+
+# Create daily dates for June, 2017-2025
+dateMay <- seq(as.Date("2017-05-01"), as.Date("2025-05-31"), by = "day")
+dateMay <- dateMay[format(dateMay, "%m") == "05"]
+
+dateJune <- seq(as.Date("2017-06-01"), as.Date("2025-06-30"), by = "day")
+dateJune <- dateJune[format(dateJune, "%m") == "06"]
+
+dateJuly <- seq(as.Date("2017-07-01"), as.Date("2025-07-31"), by = "day")
+dateJuly <- dateJuly[format(dateJuly, "%m") == "07"]
+
+dateAug <- seq(as.Date("2017-08-01"), as.Date("2025-08-31"), by = "day")
+dateAug <- dateAug[format(dateAug, "%m") == "08"]
+
+dateSep <- seq(as.Date("2017-09-01"), as.Date("2025-09-30"), by = "day")
+dateSep <- dateSep[format(dateSep, "%m") == "09"]
+# Simulate temperatures
+temperature <- round(rnorm(length(date), mean = 75, sd = 8), 1)
+
+# Create data frame
+dat <- data.frame(date = date, temperature = temperature)
+
+# Split temperatures by year so lags reset each June
+yr <- format(dat$date, "%Y")
+temp_by_year <- split(dat$temperature, yr)
+
+# Create lag0 through lag6 within each year
+for (i in 0:6) {
+  dat[[paste0("lag", i)]] <- unlist(
+    lapply(temp_by_year, function(x) {
+      if (i == 0) {
+        x
+      } else {
+        c(rep(NA, i), head(x, -i))
+      }
+    }),
+    use.names = FALSE
+  )
+}
 ```
