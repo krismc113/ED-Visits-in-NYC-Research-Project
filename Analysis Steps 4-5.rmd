@@ -5,23 +5,6 @@ date: "2026-06-30"
 output: html_document
 ---
 
-Loading  
-```{r}
-#install.packages('tidyverse')
-  library(tidyverse)
-#install.packages('dplyr')
-  library(dplyr)
-#install.packages('gmodels')
-  library(gmodels)
-#install.packages('readxl')
-  library(readxl)
-#install.packages('lubridate')
-  library(lubridate)
-#install.packages('tableone')
-  library(tableone)
-#install.packages('knitr')
-  library(knitr)
-```
 
 WD
 ```{r}
@@ -29,27 +12,8 @@ getwd()
 ```
 
 Merging Data - DOESN'T WORK WITH CONFOUNDER CODE - 1
-```{r}
 
-data <- read.csv("/Users/lilianamorales/Heat Project/previous_years.csv")
-data1 <- read.csv("/Users/lilianamorales/Heat Project/edheat2025_live.csv")
-
-
-data2 <- read.csv("previous_years.csv")
-
-data1 <- read.csv("edheat2025_live.csv")
-
-data <- bind_rows(data2, data1)
-#Combines data sets with similar rows and columns
-
-data$Date <- as.Date(data$END_DATE)
-#Turns end date column into date
-
-data$END_DATE <- NULL
-```
-
-
-Merge Data - WORKS WITH PROVIDED CON CODE - 2
+Merge Data
 ```{r}
 library(dplyr)
 
@@ -75,8 +39,8 @@ To evaluate the crude (unadjusted) relation between temperature and heat-related
 Pearson correlation|
 ```{r}
 cor.test(
-  data$MAX_DAILY_TEMP,
-  data$HEAT_ED_VISIT_COUNT,
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
   method = "pearson"
 )
 ```
@@ -86,8 +50,8 @@ Spearman correlation
 
 ```{r}
 cor.test(
-  data$MAX_DAILY_TEMP,
-  data$HEAT_ED_VISIT_COUNT,
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
   method = "spearman"
 )
 ```
@@ -98,43 +62,146 @@ Simple Regression
 Fit a crude model: Heat-related ED visits = f(temperature)
 You might explore different possible approaches, Linear regression
 ```{r}
-model1 <- lm(HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP, data = data)
+simplelinear <- lm(HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP, data = d)
 
-summary(model1)
+#Graphing Scatter Plot
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  main = "Simple Linear Regression",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  pch = 16,
+  col = "black"
+)
+
+# Add regression line
+abline(simplelinear, col = "red", lwd = 2)
+```
+
+Summary L
+```{r}
+summary(simplelinear)
 ```
 
 
 Poisson regression
 ```{r}
-glm(
+#Poisson regression
+pois_model <- glm(
   HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
   family = poisson(link = "log"),
-  data = data
+  data = d
 )
+
+summary(pois_model)
+
+#Graph 
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Poisson Regression"
+)
+
+#Line
+lines(
+  sort(d$MAX_DAILY_TEMP),
+  fitted(pois_model)[order(d$MAX_DAILY_TEMP)],
+  col = "red",
+  lwd = 2
+)
+
 ```
+
+Summary P
+```{r}
+summary(pois_model)
+```
+
+
+
+
+
+
+
+
 Quasi Poisson regression
 ```{r}
-glm(
+#Quasi-Poisson regression
+quasi_pois_model <- glm(
   HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
   family = quasipoisson(link = "log"),
-  data = data
+  data = d
 )
+
+summary(quasi_pois_model)
+
+#Graphing 
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson Regression"
+)
+
+#Line
+lines(
+  sort(d$MAX_DAILY_TEMP),
+  fitted(quasi_pois_model)[order(d$MAX_DAILY_TEMP)],
+  col = "red",
+  lwd = 2
+)
+```
+
+Summary QP
+```{r}
+summary(quasi_pois_model)
 ```
 
 
 
+
+
 Negative binomial regression
-First Load MASS 
 ```{r}
+# Negative binomial regression
 library(MASS)
+
+nb_model <- glm.nb(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  data = d
+)
+
+# Graph
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Negative Binomial Regression"
+)
+
+# Line
+lines(
+  sort(d$MAX_DAILY_TEMP),
+  fitted(nb_model)[order(d$MAX_DAILY_TEMP)],
+  col = "red",
+  lwd = 2
+)
 ```
 
-Negative binomial regression
+Summary NB
 ```{r}
-glm.nb(
-  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
-  data = data
-)
+summary(nb_model)
 ```
 
 Discuss advantages and limitations of each approach.
@@ -143,18 +210,8 @@ Discuss advantages and limitations of each approach.
 
 
 
-
-
-
 Step 5: Time-Series Analysis
 Build and refine your analytical models. Consider whether adjustment for time-varying factors (e.g., potential confounders), seasonality, temporal trends, or other covariates is warranted. To adjust for time, consider adding variables such as year, day of season, long-term trend. Clearly justify your modeling choices and discuss any assumptions made.
-
-
-Extreme Heat Days - WORK ON IT & FIX
-```{r}
-```
-
-
 
 
 Identified Holidays 
@@ -209,59 +266,238 @@ d$labor <- ifelse(d$date == labor,1,0)
 # MOTHER'S Day (2ND SUNDAY in MAY)
 mother <- as.Date(sapply(d$yr, function(y) {
   x <- as.Date(paste0(y, "-05-01"))
-  x + (8 - as.POSIXlt(x)$wday) %% 7 + 7
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 6
 }))
 d$mother <- ifelse(d$date == mother,1,0)
 
 # FATHER'S Day (3RD SUNDAY in JUNE)
 father <- as.Date(sapply(d$yr, function(y) {
   x <- as.Date(paste0(y, "-06-01"))
-  x + (8 - as.POSIXlt(x)$wday) %% 7 + 14
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 13
 }))
 d$father <- ifelse(d$date == father,1,0)
 
 # single holiday variable (indicator of any holiday) ADDED JUNETEENTH
 d$holiday <- as.integer(d$july4 | d$memorial | d$labor | d$juneteenth | d$mother | d$father)
+```
 
+
+QP adjusting for Holiday Confounders (Lumped)
+```{r}
+# Quasi-Poisson regression: all holidays combined
+quasi_holiday_model <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP + holiday,
+  family = quasipoisson(link = "log"),
+  data = d
+)
+
+# Graph
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson Adjusted for Holidays"
+)
+
+# Predicted curve (non-holiday days)
+temp_seq <- seq(
+  min(d$MAX_DAILY_TEMP),
+  max(d$MAX_DAILY_TEMP),
+  length.out = 100
+)
+
+predicted <- predict(
+  quasi_holiday_model,
+  newdata = data.frame(
+    MAX_DAILY_TEMP = temp_seq,
+    holiday = 0
+  ),
+  type = "response"
+)
+
+lines(
+  temp_seq,
+  predicted,
+  col = "red",
+  lwd = 2
+)
+```
+
+QP + Holiday Confounders Summary (Lumped)
+```{r}
+summary(quasi_holiday_model)
+```
+
+QP adjusting for Holiday Confounders (Seperate)
+```{r}
+# Quasi-Poisson regression: individual holidays
+quasi_individual_holiday_model <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP +
+    july4 +
+    juneteenth +
+    memorial +
+    labor +
+    mother +
+    father,
+  family = quasipoisson(link = "log"),
+  data = d
+)
+
+# Graph
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson Adjusted for Individual Holidays"
+)
+
+# Predicted curve (typical non-holiday day)
+temp_seq <- seq(
+  min(d$MAX_DAILY_TEMP),
+  max(d$MAX_DAILY_TEMP),
+  length.out = 100
+)
+
+predicted <- predict(
+  quasi_individual_holiday_model,
+  newdata = data.frame(
+    MAX_DAILY_TEMP = temp_seq,
+    july4 = 0,
+    juneteenth = 0,
+    memorial = 0,
+    labor = 0,
+    mother = 0,
+    father = 0
+  ),
+  type = "response"
+)
+
+lines(
+  temp_seq,
+  predicted,
+  col = "red",
+  lwd = 2
+)
+```
+
+QP + Holiday Confounders Summary (Seperate)
+```{r}
+summary(quasi_individual_holiday_model)
+```
+
+Comparing Lumped vs Seperate 
+```{r}
+# ==========================================
+# FIT STATISTICS:
+# Lumped holiday vs Individual holidays
+# ==========================================
+
+holiday_fit_compare <- data.frame(
+
+  Model = c(
+    "Lumped Holiday",
+    "Individual Holidays"
+  ),
+
+  Residual_Deviance = c(
+    deviance(quasi_holiday_model),
+    deviance(quasi_individual_holiday_model)
+  ),
+
+  Residual_DF = c(
+    df.residual(quasi_holiday_model),
+    df.residual(quasi_individual_holiday_model)
+  ),
+
+  Dispersion = c(
+    summary(quasi_holiday_model)$dispersion,
+    summary(quasi_individual_holiday_model)$dispersion
+  )
+)
+
+
+# View fit statistics side-by-side
+
+holiday_fit_compare
+
+
+# Test whether individual holidays improve fit
+
+anova(
+  quasi_holiday_model,
+  quasi_individual_holiday_model,
+  test = "F"
+)
+
+#Separating holidays doesn't make a big difference 
 ```
 
 
 
 Example Code - LAG CODE
 ```{r}
-set.seed(123)
-
-# Create daily dates for June, 2019-2023 - DONE FOR MONTHS MAY-SEP. 2017-2025
-#MAY
-datemay <- seq(as.Date("2017-05-01"), as.Date("2025-05-31"), by = "day")
-datemay <- date[format(date, "%m") == "06"]
-#JUNE
-datejune <- seq(as.Date("2017-06-01"), as.Date("2025-06-30"), by = "day")
-datejune <- date[format(date, "%m") == "06"]
-#JULY 
-datejuly <- seq(as.Date("2017-07-01"), as.Date("2025-07-31"), by = "day")
-datejuly <- date[format(date, "%m") == "06"]
-#AUGUST 
-dateaugust <- seq(as.Date("2017-08-01"), as.Date("2025-08-31"), by = "day")
-dateaugust <- date[format(date, "%m") == "06"]
-#SEPTEMBER 
-dateseptember <- seq(as.Date("2017-09-01"), as.Date("2025-09-30"), by = "day")
-dateseptember <- date[format(date, "%m") == "06"]
+# Create daily dates for June, 2019-2023 - CHANGE (2017-2025)
+date <- seq(as.Date("2017-05-01"), as.Date("2025-09-30"), by = "day")
+date <- date[format(date, "%m") %in% c("05","06","07","08","09")]
 
 
-# Simulate temperatures
-temperature <- round(rnorm(length(date), mean = 75, sd = 8), 1)
+#Deleted Simulated Temp & Data Frame 
 
-# Create data frame
-dat <- data.frame(date = date, temperature = temperature)
+# Split temperatures by year so lags reset each May-September
+d$yr <- format(d$date, "%Y")
+temp_by_year <- split(d$MAX_DAILY_TEMP, yr)
 
-# Split temperatures by year so lags reset each June
-yr <- format(dat$date, "%Y")
-temp_by_year <- split(dat$temperature, yr)
+
+
+#Quasi-Poisson regression
+quasi_pois_model_yr <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP+as.integer(yr),
+  family = quasipoisson(link = "log"),
+  data = d
+)
+summary(quasi_pois_model_yr)
+
+
+quasi_pois_model_yrf <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP+as.factor(yr),
+  family = quasipoisson(link = "log"),
+  data = d
+)
+summary(quasi_pois_model_yrf)
+
+summary(quasi_pois_model)
+
+#Graphing 
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson Regression"
+)
+
+#Line
+lines(
+  sort(d$MAX_DAILY_TEMP),
+  fitted(quasi_pois_model)[order(d$MAX_DAILY_TEMP)],
+  col = "red",
+  lwd = 2
+)
+
+
+
 
 # Create lag0 through lag6 within each year
 for (i in 0:6) {
-  dat[[paste0("lag", i)]] <- unlist(
+  d[[paste0("lag", i)]] <- unlist(
     lapply(temp_by_year, function(x) {
       if (i == 0) {
         x
@@ -273,105 +509,494 @@ for (i in 0:6) {
   )
 }
 
-head(dat, 45)
+head(d[, c("date", "MAX_DAILY_TEMP",
+           "lag1",
+           "lag6")])
+
 ```
 
-
-Example Code - Nonlinear effect of temperature - SAVE FOR LATER
+QP adjusting for Holiday (Lumped+Lags)
 ```{r}
-# fit models
-library(MASS)
-library(splines)
+# Quasi-Poisson regression:
+# Adjusted for same-day temperature, lag1, lag6, and lumped holiday
 
-# negative binomial models
-
-# linear temperature effects
-fit1 <- glm.nb(visits ~ temp, data = d)
-
-# Natural spline with 3 df; 2 knots chosen automatically
-fit2 <- glm.nb(visits ~ ns(temp, df = 3), data = d)
-
-# Natural spline with 2 user-specified knot locations
-fit3 <- glm.nb(
-  visits ~ ns(temp, knots = quantile(temp, c(0.5, 0.85), na.rm = TRUE)),
+quasi_lag_holiday_model <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP +
+    lag1 +
+    lag6 +
+    holiday,
+  family = quasipoisson(link = "log"),
   data = d
 )
 
-# Natural spline with 4 df; 3 knots chosen automatically
-fit4 <- glm.nb(visits ~ ns(temp, df = 4), data = d)
+# Plot observed data
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson: Lags + Holiday Adjustment"
+)
 
-# Compare overall model fit using AIC (aim to minimize)
-AIC(fit1, fit2, fit3, fit4)
 
-# Likelihood-ratio tests versus the linear model; others aren't nested
-anova(fit1, fit2, test = "Chisq")
-anova(fit1, fit3, test = "Chisq")
-anova(fit1, fit4, test = "Chisq")
+# Temperature range
 
-# Inspect knot locations used by the spline bases
-attr(ns(d$temp, df = 3), "knots") # 33rd and 67th percentiles (automatic)
-attr(ns(d$temp, df = 4), "knots")
-attr(ns(d$temp, knots = quantile(d$temp, c(0.5, 0.85), na.rm = TRUE)), "knots") # 50th and 85th percentiles (user specified)
+temp_seq <- seq(
+  min(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  max(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  length.out = 100
+)
 
-# Grid of temperatures for smooth prediction curves
-temp_grid <- seq(min(d$temp, na.rm = TRUE),
-                 max(d$temp, na.rm = TRUE),
-                 length.out = 200)
 
-nd <- data.frame(temp = temp_grid)
+# Prediction:
+# Average lag temperatures + average holiday frequency
 
-par(mfrow = c(1, 2))
+predicted_adjusted <- predict(
+  quasi_lag_holiday_model,
+  newdata = data.frame(
+    MAX_DAILY_TEMP = temp_seq,
+    lag1 = mean(d$lag1, na.rm = TRUE),
+    lag6 = mean(d$lag6, na.rm = TRUE),
+    holiday = mean(d$holiday, na.rm = TRUE)
+  ),
+  type = "response"
+)
 
-# -----------------------------
-# Plot 1: response scale
-# -----------------------------
-p1 <- predict(fit1, newdata = nd, type = "response")
-p2 <- predict(fit2, newdata = nd, type = "response")
-p3 <- predict(fit3, newdata = nd, type = "response")
-p4 <- predict(fit4, newdata = nd, type = "response")
 
-plot(d$temp, d$visits,
-     pch = 16, col = "grey70",
-     xlab = "Temperature", ylab = "Daily ED visits",
-     main = "Response scale")
+# Add adjusted regression line
 
-lines(temp_grid, p1, col = "black", lwd = 2)
-lines(temp_grid, p2, col = "blue",  lwd = 2)
-lines(temp_grid, p3, col = "red",   lwd = 2, lty = 2)
-lines(temp_grid, p4, col = "darkgreen", lwd = 2, lty = 3)
-
-legend("topleft",
-       legend = c("Linear", "ns(df = 3)", "ns(knots = c(0.5, 0.85))", "ns(df = 4)"),
-       col = c("black", "blue", "red", "darkgreen"),
-       lwd = 2, lty = c(1, 1, 2, 3), bty = "n")
-
-# -----------------------------
-# Plot 2: link scale
-# -----------------------------
-p1 <- predict(fit1, newdata = nd, type = "link")
-p2 <- predict(fit2, newdata = nd, type = "link")
-p3 <- predict(fit3, newdata = nd, type = "link")
-p4 <- predict(fit4, newdata = nd, type = "link")
-
-plot(d$temp, log(d$visits + 0.8),
-     pch = 16, col = "grey70", ylim=c(-.8,5),
-     xlab = "Temperature", ylab = "log(Daily ED visits + 0.8)",
-     main = "Link scale")
-
-lines(temp_grid, p1, col = "black", lwd = 2)
-lines(temp_grid, p2, col = "blue",  lwd = 2)
-lines(temp_grid, p3, col = "red",   lwd = 2, lty = 2)
-lines(temp_grid, p4, col = "darkgreen", lwd = 2, lty = 3)
-
-legend("topleft",
-       legend = c("Linear", "ns(df = 3)", "ns(knots = c(0.5, 0.85))", "ns(df = 4)"),
-       col = c("black", "blue", "red", "darkgreen"),
-       lwd = 2, lty = c(1, 1, 2, 3), bty = "n")
+lines(
+  temp_seq,
+  predicted_adjusted,
+  col = "red",
+  lwd = 2
+)
 ```
+
+QP adjusting for Holiday AVG (Lumped+Lags)  
+```{r}
+# ==========================================
+# Plot observed data
+# ==========================================
+
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson: Lags + Holiday Adjustment"
+)
+
+
+# ==========================================
+# Create prediction line
+# ==========================================
+
+temp_seq <- seq(
+  min(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  max(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  length.out = 100
+)
+
+
+predicted_average <- predict(
+  quasi_lag_holiday_model,
+  newdata = data.frame(
+    MAX_DAILY_TEMP = temp_seq,
+    lag1 = mean(d$lag1, na.rm = TRUE),
+    lag6 = mean(d$lag6, na.rm = TRUE),
+    holiday = mean(d$holiday, na.rm = TRUE)
+  ),
+  type = "response"
+)
+
+
+# ==========================================
+# Add red regression line
+# ==========================================
+
+lines(
+  temp_seq,
+  predicted_average,
+  col = "red",
+  lwd = 2
+)
+```
+
+QP adjusting for Holiday (Lumped+Lags) Summary 
+```{r}
+summary(quasi_lag_holiday_model)
+```
+
+
+Compare Holiday vs Holiday w/Lag
+```{r}
+# ==========================================
+# Compare holiday-adjusted vs lag-adjusted regression lines
+# ==========================================
+
+# Temperature sequence
+
+temp_seq <- seq(
+  min(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  max(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  length.out = 100
+)
+
+
+# Prediction: temperature + holiday
+
+pred_holiday <- predict(
+  quasi_holiday_model,
+  newdata = data.frame(
+    MAX_DAILY_TEMP = temp_seq,
+    holiday = mean(d$holiday, na.rm = TRUE)
+  ),
+  type = "response"
+)
+
+
+# Prediction: temperature + holiday + lags
+
+pred_lag_holiday <- predict(
+  quasi_lag_holiday_model,
+  newdata = data.frame(
+    MAX_DAILY_TEMP = temp_seq,
+    lag1 = mean(d$lag1, na.rm = TRUE),
+    lag6 = mean(d$lag6, na.rm = TRUE),
+    holiday = mean(d$holiday, na.rm = TRUE)
+  ),
+  type = "response"
+)
+
+
+# Plot observed data
+
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "gray",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Heat ED Visit Count",
+  main = "Effect of Lag Adjustment on Quasi-Poisson Model"
+)
+
+
+# Add regression lines
+
+lines(
+  temp_seq,
+  pred_holiday,
+  col = "red",
+  lwd = 2
+)
+
+lines(
+  temp_seq,
+  pred_lag_holiday,
+  col = "blue",
+  lwd = 2
+)
+
+
+# Legend
+
+legend(
+  "topleft",
+  legend = c(
+    "Temperature + Holiday",
+    "Temperature + Holiday + Lag1 + Lag6"
+  ),
+  col = c("red", "blue"),
+  lwd = 2,
+  cex = 0.8
+)
+```
+
 
 
 
 Advanced options:
 Consider nonlinear exposure-response relations, for example, through the use of polynomial terms or splines
+
+
+Example Code - Nonlinear effect of temperature - SAVE FOR LATER 
+```{r}
+# ==========================================
+# Negative binomial spline models
+# Using your variables:
+# Outcome = HEAT_ED_VISIT_COUNT
+# Exposure = MAX_DAILY_TEMP
+# ==========================================
+
+library(MASS)
+library(splines)
+
+
+# ------------------------------------------
+# Linear temperature effect
+# ------------------------------------------
+
+fit1 <- glm.nb(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP,
+  data = d
+)
+
+
+# ------------------------------------------
+# Natural spline with 3 df
+# Knots chosen automatically
+# ------------------------------------------
+
+fit2 <- glm.nb(
+  HEAT_ED_VISIT_COUNT ~ ns(MAX_DAILY_TEMP, df = 3),
+  data = d
+)
+
+
+# ------------------------------------------
+# Natural spline with user-specified knots
+# 50th and 85th percentile
+# ------------------------------------------
+
+fit3 <- glm.nb(
+  HEAT_ED_VISIT_COUNT ~ ns(
+    MAX_DAILY_TEMP,
+    knots = quantile(
+      MAX_DAILY_TEMP,
+      c(0.5, 0.85),
+      na.rm = TRUE
+    )
+  ),
+  data = d
+)
+
+
+# ------------------------------------------
+# Natural spline with 4 df
+# ------------------------------------------
+
+fit4 <- glm.nb(
+  HEAT_ED_VISIT_COUNT ~ ns(MAX_DAILY_TEMP, df = 4),
+  data = d
+)
+
+
+# ==========================================
+# Compare model fit using AIC
+# Lower AIC = better fit
+# ==========================================
+
+AIC(fit1, fit2, fit3, fit4)
+
+
+
+# ==========================================
+# Likelihood ratio tests
+# Compare spline models to linear model
+# ==========================================
+
+anova(fit1, fit2, test = "Chisq")
+
+anova(fit1, fit3, test = "Chisq")
+
+anova(fit1, fit4, test = "Chisq")
+
+
+
+# ==========================================
+# Inspect spline knot locations
+# ==========================================
+
+attr(
+  ns(d$MAX_DAILY_TEMP, df = 3),
+  "knots"
+)
+
+
+attr(
+  ns(d$MAX_DAILY_TEMP, df = 4),
+  "knots"
+)
+
+
+attr(
+  ns(
+    d$MAX_DAILY_TEMP,
+    knots = quantile(
+      d$MAX_DAILY_TEMP,
+      c(0.5, 0.85),
+      na.rm = TRUE
+    )
+  ),
+  "knots"
+)
+
+
+
+# ==========================================
+# Create temperature grid for prediction
+# ==========================================
+
+temp_grid <- seq(
+  min(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  max(d$MAX_DAILY_TEMP, na.rm = TRUE),
+  length.out = 200
+)
+
+
+nd <- data.frame(
+  MAX_DAILY_TEMP = temp_grid
+)
+
+
+
+# ==========================================
+# Plot 1: Response scale
+# Expected ED visits
+# ==========================================
+
+p1 <- predict(
+  fit1,
+  newdata = nd,
+  type = "response"
+)
+
+p2 <- predict(
+  fit2,
+  newdata = nd,
+  type = "response"
+)
+
+p3 <- predict(
+  fit3,
+  newdata = nd,
+  type = "response"
+)
+
+p4 <- predict(
+  fit4,
+  newdata = nd,
+  type = "response"
+)
+
+
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "grey70",
+  xlab = "Maximum Daily Temperature",
+  ylab = "Daily Heat ED Visits",
+  main = "Negative Binomial Spline Models"
+)
+
+
+lines(temp_grid, p1, col = "black", lwd = 2)
+
+lines(temp_grid, p2, col = "blue", lwd = 2)
+
+lines(temp_grid, p3, col = "red", lwd = 2, lty = 2)
+
+lines(temp_grid, p4, col = "darkgreen", lwd = 2, lty = 3)
+
+
+legend(
+  "topleft",
+  legend = c(
+    "Linear",
+    "ns(df = 3)",
+    "ns(knots = 0.5, 0.85)",
+    "ns(df = 4)"
+  ),
+  col = c(
+    "black",
+    "blue",
+    "red",
+    "darkgreen"
+  ),
+  lwd = 2,
+  lty = c(1,1,2,3),
+  bty = "n"
+)
+
+
+
+# ==========================================
+# Plot 2: Link scale
+# Log expected ED visits
+# ==========================================
+
+p1 <- predict(
+  fit1,
+  newdata = nd,
+  type = "link"
+)
+
+p2 <- predict(
+  fit2,
+  newdata = nd,
+  type = "link"
+)
+
+p3 <- predict(
+  fit3,
+  newdata = nd,
+  type = "link"
+)
+
+p4 <- predict(
+  fit4,
+  newdata = nd,
+  type = "link"
+)
+
+
+plot(
+  d$MAX_DAILY_TEMP,
+  log(d$HEAT_ED_VISIT_COUNT + 0.8),
+  pch = 16,
+  col = "grey70",
+  ylim = c(-0.8,5),
+  xlab = "Maximum Daily Temperature",
+  ylab = "Log(Daily Heat ED Visits + 0.8)",
+  main = "Negative Binomial Spline Models: Link Scale"
+)
+
+
+lines(temp_grid, p1, col = "black", lwd = 2)
+
+lines(temp_grid, p2, col = "blue", lwd = 2)
+
+lines(temp_grid, p3, col = "red", lwd = 2, lty = 2)
+
+lines(temp_grid, p4, col = "darkgreen", lwd = 2, lty = 3)
+
+
+legend(
+  "topleft",
+  legend = c(
+    "Linear",
+    "ns(df = 3)",
+    "ns(knots = 0.5, 0.85)",
+    "ns(df = 4)"
+  ),
+  col = c(
+    "black",
+    "blue",
+    "red",
+    "darkgreen"
+  ),
+  lwd = 2,
+  lty = c(1,1,2,3),
+  bty = "n"
+)
+```
+
 
 Consider lagged effects, since heat exposure may affect health immediately or after several days
