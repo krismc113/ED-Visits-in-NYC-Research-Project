@@ -1000,3 +1000,61 @@ legend(
 
 
 Consider lagged effects, since heat exposure may affect health immediately or after several days
+```{r}
+
+library(splines)
+
+# Fit the model
+quasi_spline <- glm(
+  HEAT_ED_VISIT_COUNT ~ ns(MAX_DAILY_TEMP, df = 4) +
+    as.factor(Month) +
+    holiday +
+    as.factor(yr),
+  family = quasipoisson(link = "log"),
+  data = d
+)
+
+# Create prediction grid
+plot_data <- data.frame(
+  MAX_DAILY_TEMP = seq(
+    min(d$MAX_DAILY_TEMP),
+    max(d$MAX_DAILY_TEMP),
+    length.out = 200
+  ),
+  Month = "07",      # July
+  holiday = 0,    # Non-holiday
+  yr = 2023       # Pick one year from your data
+)
+
+# Predict expected ED visits
+plot_data$pred <- predict(
+  quasi_spline,
+  newdata = plot_data,
+  type = "response"
+)
+
+
+# Scatterplot
+plot(
+  d$MAX_DAILY_TEMP,
+  d$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  col = "black",
+  xlab = "Maximum Daily Temperature (lag 0)",
+  ylab = "Heat ED Visit Count",
+  main = "Quasi-Poisson Regression with Natural Spline"
+)
+
+# Add smooth spline curve
+lines(
+  plot_data$MAX_DAILY_TEMP,
+  plot_data$pred,
+  col = "red",
+  lwd = 3
+)
+
+
+anova(quasi_spline, quasi_pois_model_all, test = "F")
+summary(quasi_spline)
+```
+

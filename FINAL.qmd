@@ -97,7 +97,7 @@ for (i in 0:6) {
 
 head(d[, c("date", "MAX_DAILY_TEMP",
            "lag1",
-           "lag4")])
+           "lag6")])
 
 ```
 
@@ -216,70 +216,59 @@ lines(
 ```
 
 ```{r}
-library(splines)
+d3 <- read.csv("edheat2026_live.csv")
 
-# Fit the model
-quasi_spline <- glm(
-  HEAT_ED_VISIT_COUNT ~ ns(MAX_DAILY_TEMP, df = 4) +
-    as.factor(Month) +
-    holiday +
-    as.factor(yr),
-  family = quasipoisson(link = "log"),
-  data = d
-)
+#Date, Month, And Year Variable
 
-# Create prediction grid
-plot_data <- data.frame(
-  MAX_DAILY_TEMP = seq(
-    min(d$MAX_DAILY_TEMP),
-    max(d$MAX_DAILY_TEMP),
-    length.out = 200
-  ),
-  Month = "07",      # July
-  holiday = 0,    # Non-holiday
-  yr = 2023       # Pick one year from your data
-)
+d3$date <- as.Date(d3$END_DATE)
+d3$END_DATE <- NULL
 
-# Predict expected ED visits
-plot_data$pred <- predict(
-  quasi_spline,
-  newdata = plot_data,
-  type = "response"
-)
+d3$yr <- as.numeric(format(d3$date, "%Y"))
 
-# Scatterplot
-plot(
-  d$MAX_DAILY_TEMP,
-  d$HEAT_ED_VISIT_COUNT,
-  pch = 16,
-  col = "black",
-  xlab = "Maximum Daily Temperature (lag 0)",
-  ylab = "Heat ED Visit Count",
-  main = "Quasi-Poisson Regression with Natural Spline"
-)
+d3$Month <- as.numeric(format(d3$date, "%m"))
 
-# Add smooth spline curve
-lines(
-  plot_data$MAX_DAILY_TEMP,
-  plot_data$pred,
-  col = "red",
-  lwd = 3
-)
+#Holiday
 
-anova(quasi_spline, quasi_pois_model_all, test = "F")
-summary(quasi_spline)
+# Independence Day
+d3$july4 <- ifelse(format(d3$date, "%m-%d") == "07-04",1,0)
+
+# Juneteenth
+d3$juneteenth <- ifelse(format(d3$date, "%m-%d") == "06-19",1,0)
+
+# Mother's Day
+mother <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 6
+}))
+d3$mother <- ifelse(d3$date == mother,1,0)
+
+# Father's Day
+father <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-06-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 13
+}))
+d3$father <- ifelse(d3$date == father,1,0)
+
+# Memorial Day
+memorial <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-01"))
+  x - as.POSIXlt(x)$wday %% 7 + 29
+}))
+d3$memorial <- ifelse(d3$date == memorial,1,0)
+
+# Labor Day
+labor <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-09-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7
+}))
+d3$labor <- ifelse(d3$date == labor,1,0)
+
+# single holiday
+d3$holiday <- as.integer(d3$july4 | d3$memorial | d3$labor | d3$juneteenth | d3$mother | d3$father)
 
 ```
 
-| Coefficient    |          Estimate | Std. Error | t-value | Pr(\>\|t\|) |
-|----------------|------------------:|-----------:|--------:|:-----------:|
-| MAX_DAILY_TEMP | [0.145751]{.mark} |   0.003158 |  46.150 |  \< 2e-16   |
-
-```         
-Coefficients:
-                       Estimate Std. Error t value Pr(>|t|)    
-(Intercept)          -11.077676   0.286135 -38.715  < 2e-16 ***
-MAX_DAILY_TEMP         0.145751   0.003158  46.150  < 2e-16 ***
+```{}
 ```
 
 ## All Covariates + Lag 1
@@ -324,4 +313,189 @@ quasi_pois_model_lag4 <- glm(
   data = d
 )
 summary(quasi_pois_model_lag4)
+```
+
+D3 Data
+
+```{r}
+d3 <- read.csv("edheat2026_live.csv")
+
+#Date, Month, And Year Variable
+
+d3$date <- as.Date(d3$END_DATE)
+d3$END_DATE <- NULL
+
+d3$yr <- as.numeric(format(d3$date, "%Y"))
+
+d3$Month <- as.numeric(format(d3$date, "%m"))
+
+#Holiday
+
+# Independence Day
+d3$july4 <- ifelse(format(d3$date, "%m-%d") == "07-04",1,0)
+
+# Juneteenth
+d3$juneteenth <- ifelse(format(d3$date, "%m-%d") == "06-19",1,0)
+
+# Mother's Day
+mother <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 6
+}))
+d3$mother <- ifelse(d3$date == mother,1,0)
+
+# Father's Day
+father <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-06-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7 + 13
+}))
+d3$father <- ifelse(d3$date == father,1,0)
+
+# Memorial Day
+memorial <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-05-01"))
+  x - as.POSIXlt(x)$wday %% 7 + 29
+}))
+d3$memorial <- ifelse(d3$date == memorial,1,0)
+
+# Labor Day
+labor <- as.Date(sapply(d3$yr, function(y) {
+  x <- as.Date(paste0(y, "-09-01"))
+  x + (8 - as.POSIXlt(x)$wday) %% 7
+}))
+d3$labor <- ifelse(d3$date == labor,1,0)
+
+# single holiday
+d3$holiday <- as.integer(d3$july4 | d3$memorial | d3$labor | d3$juneteenth | d3$mother | d3$father)
+
+
+#quasi pois model for 2026
+quasi_pois_model_all3 <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP + Month + holiday,
+  family = quasipoisson(link = "log"),
+  data = d3
+)
+
+summary(quasi_pois_model_all3)
+
+#year is constant
+
+```
+
+## Prediction
+
+```{r}
+d$yr <- as.numeric(as.character(d$yr))
+d$Month <- as.numeric(as.character(d$Month))
+
+quasi_pois_model_all <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP + holiday + yr + Month,
+  family = quasipoisson(link = "log"),
+  data = d )
+
+pred_2026 <- predict(
+  quasi_pois_model_all,
+  newdata = d3,
+  type = "response"
+)
+
+d3$Ph1<- pred_2026
+
+plot(
+  d3$date,
+  d3$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  xlab = "Date (2026)",
+  ylab = "Heat-Related ED Visits",
+  main = "Observed vs Predicted Heat ED Visits: 2026"
+)
+
+lines(
+  d3$date,
+  d3$Ph1,
+  col = "red",
+  lwd = 2
+)
+
+legend(
+  "topleft",
+  legend = c("Observed", "Predicted"),
+  pch = c(16, NA),
+  lty = c(NA, 1),
+  col = c("black", "red")
+)
+```
+
+Prediction With Lags
+
+```{r}
+
+temp_by_year3 <- split(d3$MAX_DAILY_TEMP, d3$yr)
+
+for (i in 0:6) {
+  d3[[paste0("lag", i)]] <- unlist(
+    lapply(temp_by_year3, function(x) {
+      if (i == 0) {
+        x
+      } else {
+        c(rep(NA, i), head(x, -i))
+      }
+    }),
+    use.names = FALSE
+  )
+}
+
+head(d3[, c("date", "MAX_DAILY_TEMP",
+           "lag1",
+           "lag6")])
+
+quasi_pois_model_all_2 <- glm(
+  HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP + holiday + yr + Month + lag1 + lag2 + lag3 + lag4 + lag5 + lag6,
+  family = quasipoisson(link = "log"),
+  data = d )
+
+pred_2026_2 <- predict(
+  quasi_pois_model_all,
+  newdata = d3,
+  type = "response"
+)
+
+d3$Ph2 <- pred_2026
+
+plot(
+  d3$date,
+  d3$HEAT_ED_VISIT_COUNT,
+  pch = 16,
+  xlab = "Date (2026)",
+  ylab = "Heat-Related ED Visits",
+  main = "Observed vs Predicted Heat ED Visits: 2026"
+)
+
+lines(
+  d3$date,
+  d3$Ph2,
+  col = "red",
+  lwd = 2
+)
+
+legend(
+  "topleft",
+  legend = c("Observed", "Predicted"),
+  pch = c(16, NA),
+  lty = c(NA, 1),
+  col = c("black", "red")
+)
+
+```
+
+RMSE
+
+```{r}
+
+rmse_base <- sqrt(mean((d3$HEAT_ED_VISIT_COUNT-d3$Ph2)^2, na.rm = TRUE))
+print(rmse_base)
+
+rmse_base1 <- sqrt(mean((d3$HEAT_ED_VISIT_COUNT-d3$Ph1)^2, na.rm = TRUE))
+print(rmse_base1)
+
 ```
