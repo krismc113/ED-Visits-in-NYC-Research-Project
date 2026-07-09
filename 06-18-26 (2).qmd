@@ -100,7 +100,6 @@ ggplot(data,
 
 ```
 
-
 ```{r}
 
 
@@ -192,6 +191,7 @@ p1_final <- wrap_plots(may, june, july, august, september, nrow = 1) +
 print(p1_final)
 
 ```
+
 ```{r}
 
 data$Year <- year(data$Date)
@@ -206,7 +206,6 @@ ggplot(data,
         title = "Distribution of Heat-Related ED Visits by Year" )
 
 ```
-
 
 ## Miscellaneous
 

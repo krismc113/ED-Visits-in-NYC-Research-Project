@@ -502,7 +502,7 @@ data$juneteenth <- ifelse(format(data$date, "%m-%d") == "06-19",1,0)
 # Memorial Day (last Monday in May)
 memorial <- as.Date(sapply(data$yr, function(y) {
   x <- as.Date(paste0(y, "-05-31"))
-  x - as.POSIXlt(x)$wday   # subtract 0-6 days to reach Monday
+  x - ((as.POSIXlt(x)$wday + 6) %% 7)
 }))
 data$memorial <- ifelse(data$date == memorial,1,0)
 

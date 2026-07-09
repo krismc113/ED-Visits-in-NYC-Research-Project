@@ -253,7 +253,7 @@ plot(
   d$HEAT_ED_VISIT_COUNT,
   pch = 16,
   col = "black",
-  xlab = "Maximum Daily Temperature",
+  xlab = "Maximum Daily Temperature (lag 0)",
   ylab = "Heat ED Visit Count",
   main = "Quasi-Poisson Regression with Natural Spline"
 )
@@ -267,6 +267,19 @@ lines(
 )
 
 anova(quasi_spline, quasi_pois_model_all, test = "F")
+summary(quasi_spline)
+
+```
+
+| Coefficient    |          Estimate | Std. Error | t-value | Pr(\>\|t\|) |
+|----------------|------------------:|-----------:|--------:|:-----------:|
+| MAX_DAILY_TEMP | [0.145751]{.mark} |   0.003158 |  46.150 |  \< 2e-16   |
+
+```         
+Coefficients:
+                       Estimate Std. Error t value Pr(>|t|)    
+(Intercept)          -11.077676   0.286135 -38.715  < 2e-16 ***
+MAX_DAILY_TEMP         0.145751   0.003158  46.150  < 2e-16 ***
 ```
 
 ## All Covariates + Lag 1
