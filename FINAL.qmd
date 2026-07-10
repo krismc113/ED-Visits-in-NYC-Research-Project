@@ -215,6 +215,16 @@ lines(
 
 ```
 
+## Confidence interval
+
+```{r}
+ci_log <- confint.default(quasi_pois_model_all)
+print(ci_log)
+
+ci_irr <- exp(ci_log)
+print(ci_irr)
+```
+
 ```{r}
 d3 <- read.csv("edheat2026_live.csv")
 
