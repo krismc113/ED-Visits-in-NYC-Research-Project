@@ -393,13 +393,13 @@ quasi_pois_model_all <- glm(
   family = quasipoisson(link = "log"),
   data = d )
 
-pred_2026 <- predict(
+pred_20261 <- predict(
   quasi_pois_model_all,
   newdata = d3,
   type = "response"
 )
 
-d3$Ph1<- pred_2026
+d3$Ph1<- pred_20261
 
 plot(
   d3$date,
@@ -454,13 +454,13 @@ quasi_pois_model_all_2 <- glm(
   family = quasipoisson(link = "log"),
   data = d )
 
-pred_2026_2 <- predict(
+pred_20262 <- predict(
   quasi_pois_model_all,
   newdata = d3,
   type = "response"
 )
 
-d3$Ph2 <- pred_2026
+d3$Ph2 <- pred_20262
 
 plot(
   d3$date,
