@@ -137,10 +137,12 @@ for(i in 0:NLAG){
                          confint(mymodeli)[2,],
                          summary(mymodeli)$coef[2,"Pr(>|t|)"])
 }
-results_crude
-results_adj
+results_crude <- exp(results_crude) - 1
+results_crude <- results_crude*100
+results_adj <- exp(results_adj) - 1
+results_adj <- results_adj*100
 
-
+print(results_adj)
 
 ##########################################
 ## plotting code #########################
@@ -180,7 +182,7 @@ for(i in seq_along(res_list)) {
        ylim = ylim,
        xaxt = "n",
        xlab = "Lag (days)",
-       ylab = "Effect estimate",
+       ylab = "ED % Change Per 1°F Temp. Increase",
        main = names(res_list)[i])
   
   axis(1, at = lags)

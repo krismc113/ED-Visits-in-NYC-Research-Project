@@ -185,7 +185,7 @@ d$holiday <- as.integer(d$july4 | d$memorial | d$labor | d$juneteenth | d$mother
 ```{r}
 install.packages('car')
 library(car)
-vif(quasi_pois_model_all)
+# vif(quasi_pois_model_all)
 quasi_pois_model_all <- glm(
   HEAT_ED_VISIT_COUNT ~ MAX_DAILY_TEMP+as.factor(d$Month)+d$holiday+as.factor(yr),
   family = quasipoisson(link = "log"),
@@ -221,9 +221,13 @@ lines(
 ci_log <- confint.default(quasi_pois_model_all)
 print(ci_log)
 
-ci_irr <- exp(ci_log)
+ci_irr <- ((exp(ci_log))*100)
 print(ci_irr)
 ```
+
+| Coefficient    | Estimate | Pr(\|t\|) | 95% CI         |
+|----------------|----------|-----------|----------------|
+| MAX_DAILY_TEMP | 15.7%    | \<2e-16   | (15.0%, 16.4%) |
 
 ```{r}
 d3 <- read.csv("edheat2026_live.csv")
@@ -278,7 +282,7 @@ d3$holiday <- as.integer(d3$july4 | d3$memorial | d3$labor | d3$juneteenth | d3$
 
 ```
 
-```{}
+```         
 ```
 
 ## All Covariates + Lag 1
