@@ -167,11 +167,11 @@ ylim <- range(
 
 par(mfrow = c(1, 2),
     mar = c(4, 4, 3, 1),
-    oma = c(0, 0, 1, 0))
+    oma = c(0, 0, 3, 0))
 
 
-par(mfrow = c(1,2),
-    mar = c(4,4,3,1))
+#par(mfrow = c(1,2),
+    #mar = c(4,4,3,1))
 
 for(i in seq_along(res_list)) {
   
@@ -199,4 +199,10 @@ for(i in seq_along(res_list)) {
   
   abline(h = 0, lty = 2, col = "gray50")
 }
+mtext("Estimation Model",
+      side = 3,
+      outer = TRUE,
+      line = 1,
+      cex = 1.5,
+      font = 2)
 ```
